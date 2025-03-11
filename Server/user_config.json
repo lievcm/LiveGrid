@@ -1,0 +1,25 @@
+{
+    "webserver_options": {
+        "port": 3000
+    },
+    "dboptions": {
+        "database": "LivegridTesting",
+        "username": "postgres",
+        "password": "postgres",
+        "host": "localhost",
+        "port": 5432,
+        "dialect": "postgres",
+        "logging": false
+    },
+    "mqtt_options": {
+        "host": "localhost",
+        "port": 1883,
+        "protocol": "mqtt",
+        "protocolId": "MQTT",
+        "protocolVersion": 5,
+        "clean": true,
+        "clientId": "webserver_1",
+        "username": "admin",
+        "password": "1234"
+    }
+}
