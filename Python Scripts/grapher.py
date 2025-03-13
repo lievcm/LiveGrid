@@ -1,0 +1,97 @@
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import numpy as np
+import paho.mqtt.client as mqtt
+
+#mqtt stuff
+
+# connection function
+def on_connect(client, userdata, flags, rc, properties):
+    print("Connected with result code "+str(rc))
+    client.subscribe("sensor_data/raw")
+
+# message handler
+def on_message(client, userdata, msg):
+
+    #python moment lol
+    data = np.array([[int(datapoint, 16) for datapoint in line.split(",")] for line in msg.payload.decode("utf-8").strip().split("\n")[1:]])
+
+    # center data
+    data.T[1:] = data.T[1:] - 2065
+
+
+    # convert to float
+    data = data.astype(float)
+
+    # scale to voltage
+    data.T[1:] = data.T[1:] * 3.3 / 4096.0
+
+    # calculate rms
+    rms = np.sqrt(np.mean(data.T[1:]**2, axis = 1))
+
+    #find trigger index
+    trigger = 0.05 # trigger on rising edge @ 0.05V
+    trigger_index = 0
+    for i, row in enumerate(data[1:]):
+        if row[3] > trigger and data[i-1][3] < trigger: #check for low to high transition at trigger
+            trigger_index = i - 1
+            break
+    
+    #plot data
+    time_vals = data.T[0][trigger_index:] - data.T[0][trigger_index]
+    phase1_line.set_data(time_vals, data.T[1][trigger_index:])
+    phase2_line.set_data(time_vals, data.T[2][trigger_index:])
+    phase3_line.set_data(time_vals, data.T[3][trigger_index:])
+    neutral_line.set_data(time_vals, data.T[4][trigger_index:])
+
+    #update rms text
+    phase1_rms_text.set_text(f'Phase 1 RMS: {rms[0]:.4f}')
+    phase2_rms_text.set_text(f'Phase 2 RMS: {rms[1]:.4f}')
+    phase3_rms_text.set_text(f'Phase 3 RMS: {rms[2]:.4f}')
+    neutral_rms_text.set_text(f'Neutral RMS: {rms[3]:.4f}')
+
+    #update graph
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+
+# setup function
+def init_mqtt() :
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, "testgrapher-12345")
+    client.on_connect = on_connect
+    client.on_message = on_message
+    client.username_pw_set("admin", "1234")
+    client.connect("localhost", 1883)
+    client.loop_forever()
+
+#matplotlib stuff
+
+# setup figure and axes
+fig, axs = plt.subplots(2, 2)
+fig.tight_layout(pad = 3.0)
+fig.suptitle('Sensor Readings')
+axs.flat[0].set_title('Phase 1')
+axs.flat[1].set_title('Phase 2')
+axs.flat[2].set_title('Phase 3')
+axs.flat[3].set_title('Neutral')
+for ax in axs.flat:
+    ax.set_xlabel('Time (us)')
+    ax.set_ylabel('Voltage (V)')
+    ax.grid(True)
+    ax.set_ylim(-2, 2)
+    ax.set_xlim(0, 40000)
+
+# setup lines and text
+phase1_line = axs.flat[0].plot([], [], 'r.-')[0]
+phase2_line = axs.flat[1].plot([], [], 'g.-')[0]
+phase3_line = axs.flat[2].plot([], [], 'b.-')[0]
+neutral_line = axs.flat[3].plot([], [], 'k.-')[0]
+phase1_rms_text = axs.flat[0].text(0.02, 0.9, '', fontsize = 10, bbox = dict(facecolor = 'white', alpha = 0.5), transform = axs.flat[0].transAxes)
+phase2_rms_text = axs.flat[1].text(0.02, 0.9, '', fontsize = 10, bbox = dict(facecolor = 'white', alpha = 0.5), transform = axs.flat[1].transAxes)
+phase3_rms_text = axs.flat[2].text(0.02, 0.9, '', fontsize = 10, bbox = dict(facecolor = 'white', alpha = 0.5), transform = axs.flat[2].transAxes)
+neutral_rms_text = axs.flat[3].text(0.02, 0.9, '', fontsize = 10, bbox = dict(facecolor = 'white', alpha = 0.5), transform = axs.flat[3].transAxes)
+
+# have matplotlib call mqtt setup after rendering graph
+fig.canvas.manager.window.after(1000, init_mqtt)
+
+# show graph
+plt.show()
