@@ -14,41 +14,45 @@ def on_connect(client, userdata, flags, rc, properties):
 def on_message(client, userdata, msg):
 
     #python moment lol
-    data = np.array([[int(datapoint, 16) for datapoint in line.split(",")] for line in msg.payload.decode("utf-8").strip().split("\n")[1:]])
+    data = np.array([[int(datapoint, 16) for datapoint in line.split(",")] for line in msg.payload.decode("utf-8").strip().split("\n")])
+    phase = data[0][1]
+    data = data[1:].T
 
     # center data
-    data.T[1:] = data.T[1:] - 2065
-
+    data[1] = data[1] - 2048
 
     # convert to float
     data = data.astype(float)
 
     # scale to voltage
-    data.T[1:] = data.T[1:] * 3.3 / 4096.0
+    data[1] = data[1] * 3.3 / 4096.0
 
     # calculate rms
-    rms = np.sqrt(np.mean(data.T[1:]**2, axis = 1))
+    rms = np.sqrt(np.mean(data[1]**2))
 
     #find trigger index
     trigger = 0.05 # trigger on rising edge @ 0.05V
     trigger_index = 0
-    for i, row in enumerate(data[1:]):
-        if row[3] > trigger and data[i-1][3] < trigger: #check for low to high transition at trigger
+    for i, reading in enumerate(data[1][1:]):
+        if reading > trigger and data[1][i-1] < trigger: #check for low to high transition at trigger
             trigger_index = i - 1
             break
     
     #plot data
-    time_vals = data.T[0][trigger_index:] - data.T[0][trigger_index]
-    phase1_line.set_data(time_vals, data.T[1][trigger_index:])
-    phase2_line.set_data(time_vals, data.T[2][trigger_index:])
-    phase3_line.set_data(time_vals, data.T[3][trigger_index:])
-    neutral_line.set_data(time_vals, data.T[4][trigger_index:])
-
-    #update rms text
-    phase1_rms_text.set_text(f'Phase 1 RMS: {rms[0]:.4f}')
-    phase2_rms_text.set_text(f'Phase 2 RMS: {rms[1]:.4f}')
-    phase3_rms_text.set_text(f'Phase 3 RMS: {rms[2]:.4f}')
-    neutral_rms_text.set_text(f'Neutral RMS: {rms[3]:.4f}')
+    time_vals = data[0][trigger_index:] - data[0][trigger_index]
+    match phase:
+        case 0:
+            phase1_line.set_data(time_vals, data[1][trigger_index:])
+            phase1_rms_text.set_text(f'Phase 1 RMS: {rms}')
+        case 1:
+            phase2_line.set_data(time_vals, data[1][trigger_index:])
+            phase2_rms_text.set_text(f'Phase 2 RMS: {rms}')
+        case 2:
+            phase3_line.set_data(time_vals, data[1][trigger_index:])
+            phase3_rms_text.set_text(f'Phase 3 RMS: {rms}')
+        case 3:
+            neutral_line.set_data(time_vals, data[1][trigger_index:])
+            neutral_rms_text.set_text(f'Neutral RMS: {rms}')
 
     #update graph
     fig.canvas.draw()
