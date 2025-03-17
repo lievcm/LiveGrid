@@ -14,13 +14,19 @@ const server = require('http').createServer(app);
 
 app.use(bodyParser.json());
 
+corsOpts = {
+    origin: "http://localhost:5173"
+}
+
+app.use(cors(corsOpts));
+
 // mqtt (data streaming from sensor)
 const mqtt = require('mqtt');
 client = mqtt.connect(user_config.mqtt_options);
 
 // Socket.io (data streaming to client)
 const { Server } = require('socket.io');
-const io = new Server(server);
+const io = new Server(server, {cors : corsOpts});
 
 // Sequelize (Database access (postgres))
 const Sequelize = require('sequelize');
@@ -78,26 +84,27 @@ client.on("error", (err) => {
 
 client.on("connect", () => {
     console.log("Connected to MQTT Broker, client id: " + client.options.clientId);
-    client.subscribe("sensor_data/processed", {qos: 1});
+    client.subscribe("sensor_data/#", {qos: 1});
 });
 
 
 client.on("message", async (topic, message, packet) => {
     if (topic.toString() == "sensor_data/raw") {
-        message = {};
-        var datapoints = [[], [], [], [], []];
-        let datapoints_raw = message.toString().trim().split("\n");
-        message.origin_id = datapoints_raw[0];
-        for (var i = 1 ; i < datapoints_raw.length ; i++){
-            let line = datapoints_raw[i].split(",");
-            for (var j = 0; j < line.length; j++) {
-                datapoints [j][i-1] = Number("0x" + line[j]);
-            }
+        let message_data = {};
+        let lines = message.toString().trim().split("\n");
+        message_data.origin_id = Number('0x' + lines[0].split(",")[0])
+        message_data.phase = Number('0x' + lines[0].split(",")[1])
+        let init_time = Number('0x' + lines[1].split(",")[0])
+        let datapoints = []
+        for (var i = 1 ; i < lines.length ; i++){
+            let line = lines[i].split(",")
+            datapoints[i-1] = [Number('0x' + line[0]) - init_time, Number('0x' + line[1])]
         }
-        message.datapoints = datapoints;
-        io.emit("sensor_data", message);
+        message_data.data = datapoints;
+        io.emit("sensor_data", message_data);
     }
     else if (topic.toString() == "sensor_data/processed") {
+        /*
         let parsedMessage = JSON.parse(message);
         try {
             await sensor_data.create({
@@ -113,6 +120,7 @@ client.on("message", async (topic, message, packet) => {
         } catch (err) {
             console.log(err);
         }
+            */
     }
     else {
         console.log("MQTT message received and NOT processed!");
