@@ -15,14 +15,22 @@ export default {
 </script>
 
 <style>
+:root {
+    --sidebar-bg-color: #444444;
+    --sidebar-item-hover: #3a3a3a;
+    --sidebar-item-active: #333333;
+    --sidebar-accent-color: #0090c9;
+    --widget-bg-color: #353535;
+}
+
 body {
-  background-color: #4b4b4b;
+  background-color: #222222;
   margin: 0px;
 }
 
 .content {
   margin-left: 65px;
-  margin-top: 60px;
+  margin-top: 56px;
   padding: 10px;
 }
 </style>

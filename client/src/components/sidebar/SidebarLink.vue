@@ -1,4 +1,5 @@
 <script>
+import { computed } from 'vue'
 import { collapsed } from './state'
 
 export default {
@@ -7,19 +8,15 @@ export default {
         icon: { type: String, required: true }
     },
     setup(props) {
-        return {collapsed}
-    },
-    methods: {
-        getImgUrl: function(path) {
-            return new URL('../../assets/icons/' + path, import.meta.url).href
-        }
+        const iconURL = computed(() => new URL('../../assets/icons/' + props.icon, import.meta.url).href)
+        return {collapsed, iconURL}
     }
 }
 </script>
 
 <template>
     <router-link :to="to">
-        <img :src="getImgUrl(icon)" alt="icon" class="icon" style="margin-left:10.5px"/>
+        <img :src="iconURL" alt="icon" class="icon" />
         <span :style="{opacity : `${collapsed ? 0 : 100}%`}" class="text">
             <slot></slot>
         </span>
@@ -82,6 +79,6 @@ a.router-link-active img {
     width: 35px;
     height: 35px;
     margin-right: 5px;
-    margin-left: 8px;
+    margin-left: 10px;
 }
 </style>

@@ -82,7 +82,7 @@ void loop() {
       if (!client.publish("sensor_data/raw", csv)) {
         client.disconnect();
       }
-      delay(50);
+      delay(250);
     }
   }
 

@@ -26,15 +26,6 @@ export default {
     </div>
 </template>
 
-<style>
-:root {
-    --sidebar-bg-color: #202020;
-    --sidebar-item-hover: #333333;
-    --sidebar-item-active: #181818;
-    --sidebar-accent-color: #0090c9;
-}
-</style>
-
 <style scoped>
 .sidebar {
     color: white;
@@ -42,7 +33,7 @@ export default {
 
     float: left;
     position: fixed;
-    z-index: 1;
+    z-index: 2;
     top: 0;
     left: 0;
     bottom: 0;
@@ -57,7 +48,7 @@ export default {
 
     font-family: "Helvetica", sans-serif;
 
-    box-shadow:  1px 0px 3px 0.5px rgba(0,0,0,0.55);
+    box-shadow:  1.5px 0px 8px 0.2px rgba(1, 88, 138, 0.55);
 }
 
 .accent-text {
