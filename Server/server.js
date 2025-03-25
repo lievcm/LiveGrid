@@ -39,16 +39,16 @@ let sensor_data = sequelize.define('sensor_data', {
     origin_id: {
         type: Sequelize.INTEGER
     },
-    phase1_data: {
+    phase1_rms: {
         type: Sequelize.DOUBLE
     },
-    phase2_data: {
+    phase2_rms: {
         type: Sequelize.DOUBLE
     },
-    phase3_data: {
+    phase3_rms: {
         type: Sequelize.DOUBLE
     },
-    neutral_data: {
+    neutral_rms: {
         type: Sequelize.DOUBLE
     }
 }, { timestamps: false, id: false});
@@ -96,7 +96,11 @@ app.get('/', (req, res) => {
 });
 
 // API
-app.get('')
+app.get('/api/:originId/data/:startTime-:endTime', (req, res) => {
+    var oid = req.params.originId;
+    var startTime = new Date(req.params.startTime);
+    var endTime = new Date(req.params.endTime);
+});
 
 // Socket.io
 io.on('connection', (socket) => {

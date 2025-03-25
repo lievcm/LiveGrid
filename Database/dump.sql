@@ -8,8 +8,8 @@
 --
 -- Name: timescaledb; Type: EXTENSION; Schema: -; Owner: -
 --
-DROP DATABASE IF EXISTS LivegridTesting;
-CREATE DATABASE LivegridTesting;
+DROP DATABASE IF EXISTS livegridtesting;
+CREATE DATABASE livegridtesting;
 
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 DROP TABLE IF EXISTS sensor_data;
@@ -40,10 +40,10 @@ INSERT INTO sensors(id, name, type, location, connected, last_transmission) VALU
 CREATE TABLE sensor_data (
     time TIMESTAMPTZ NOT NULL,
     origin_id integer,
-    phase1_data double precision,
-    phase2_data double precision,
-    phase3_data double precision,
-    neutral_data double precision,
+    phase1_rms double precision,
+    phase2_rms double precision,
+    phase3_rms double precision,
+    neutral_rms double precision,
     FOREIGN KEY (origin_id) REFERENCES sensors(id)
 );
 
