@@ -96,7 +96,11 @@ app.get('/', (req, res) => {
 });
 
 // API
-app.get('')
+app.get('/api/:originId/data/:startTime-:endTime', (req, res) => {
+    var oid = req.params.originId;
+    var startTime = new Date(req.params.startTime);
+    var endTime = new Date(req.params.endTime);
+});
 
 // Socket.io
 io.on('connection', (socket) => {
