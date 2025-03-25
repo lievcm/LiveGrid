@@ -3,7 +3,7 @@
         "port": 3000
     },
     "dboptions": {
-        "database": "LivegridTesting",
+        "database": "livegridtesting",
         "username": "postgres",
         "password": "postgres",
         "host": "localhost",
