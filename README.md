@@ -54,8 +54,8 @@ See [license](/LICENSE)
 
 ## Images
 <p align="middle">
-<img src="/assets/image-2.png" width=40%>
-<img src="/assets/image-3.png" width=40%>
+<img src="/assets/image-2.png" width=49%>
+<img src="/assets/image-3.png" width=49%>
 </p>
 <img src="/assets/image.png">
 <img src="/assets/image-4.png">
