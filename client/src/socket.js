@@ -46,18 +46,16 @@ socket.on("connect", () => {
 socket.on("disconnect", () => {socket_state.connected = false;})
 
 socket.on("sensor_data", (msg) => {
-    if(router.currentRoute.value.name == "Monitor") {
-        for (var i = 0; i < socket_state.sensor_data.length; i++) {
-            if (socket_state.sensor_data[i].origin_id == msg.origin_id) {
-                socket_state.sensor_data[i].phase1_data = msg.phase1_data;
-                socket_state.sensor_data[i].phase2_data = msg.phase2_data;
-                socket_state.sensor_data[i].phase3_data = msg.phase3_data;
-                socket_state.sensor_data[i].neutral_data = msg.neutral_data;
-                socket_state.sensor_data[i].trigger_index = msg.trigger_index;
-                socket_state.sensor_data[i].delta_phase2 = msg.delta_phase2;
-                socket_state.sensor_data[i].delta_phase3 = msg.delta_phase3;
-                break;
-            }
+    for (var i = 0; i < socket_state.sensor_data.length; i++) {
+        if (socket_state.sensor_data[i].origin_id == msg.origin_id) {
+            socket_state.sensor_data[i].phase1_data = msg.phase1_data;
+            socket_state.sensor_data[i].phase2_data = msg.phase2_data;
+            socket_state.sensor_data[i].phase3_data = msg.phase3_data;
+            socket_state.sensor_data[i].neutral_data = msg.neutral_data;
+            socket_state.sensor_data[i].trigger_index = msg.trigger_index;
+            socket_state.sensor_data[i].delta_phase2 = msg.delta_phase2;
+            socket_state.sensor_data[i].delta_phase3 = msg.delta_phase3;
+            break;
         }
     }
 })

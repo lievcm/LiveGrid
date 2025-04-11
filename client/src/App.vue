@@ -19,7 +19,7 @@ export default {
     --sidebar-bg-color: #444444;
     --sidebar-item-hover: #3a3a3a;
     --sidebar-item-active: #333333;
-    --sidebar-accent-color: #0090c9;
+    --sidebar-accent-color: #1394dd;
     --widget-bg-color: #353535;
 }
 

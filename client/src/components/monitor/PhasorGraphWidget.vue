@@ -15,6 +15,7 @@ const phase3_transform = computed(() => `rotate(${-sens.value.delta_phase3.toFix
 const phase2_dash_array = computed(() => `${-94.25*sens.value.delta_phase2 / 360 } 500`)
 const phase3_dash_array = computed(() => `${-157*sens.value.delta_phase3 / 360 } 500`)
 
+
 const max_rms = computed(() => Math.max(sens.value.phase1_rms, sens.value.phase2_rms, sens.value.phase3_rms))
 
 const phase1_arrow_width = computed(() => 96*sens.value.phase1_rms/max_rms.value)

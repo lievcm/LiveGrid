@@ -23,7 +23,6 @@ export default {
         </div>
         <div class="divider"></div>
         <div class="widgets">
-            <div class="list-end"></div>
             <SensorWidget v-for="sensor in sensor_data" :origin_id="sensor.origin_id"/>
             <div class="list-end"></div>
         </div>
@@ -73,8 +72,8 @@ export default {
 }
 
 .widgets .list-end {
-    height: 1px;
-    background-color: #2c2c2c;
+    height: 0.5px;
+    background-color: var(--sidebar-accent-color);
 }
 
 </style>

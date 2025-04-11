@@ -4,7 +4,6 @@
 #include "Particle.h" 
 
 // no i will not be using classes
-// fuck you
 namespace sensor_processing {
 
     // enum for state
@@ -21,17 +20,14 @@ namespace sensor_processing {
     // gets called in main loop
     void loop();
 
-    // returns csv chunk or NULL depending on state
-    char* get_chunk_csv();
+    // returns waveform csv or NULL depending on state
+    char* get_waveform_csv();
 
-    // returns rms json or NULL depending on state
-    char* get_rms_json();
+    // returns rms data array, index 0 points to json, index 1 to csv
+    char** get_rms_data();
 
-    // gets state for csv fsm
-    bool is_ready_csv();
-
-    // gets state for json fsm
-    bool is_ready_json();
+    // gets state for fsm
+    bool is_ready();
 
 }
 

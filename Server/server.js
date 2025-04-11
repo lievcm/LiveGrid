@@ -17,7 +17,6 @@ app.use(bodyParser.json());
 corsOpts = {
     origin: "http://localhost:5173"
 }
-
 app.use(cors(corsOpts));
 
 // mqtt (data streaming from sensor)
@@ -31,48 +30,13 @@ const io = new Server(server, {cors : corsOpts});
 // Sequelize (Database access (postgres))
 const Sequelize = require('sequelize');
 const sequelize = new Sequelize(user_config.dboptions);
-let sensor_data = sequelize.define('sensor_data', {
-    time: {
-        primaryKey: true,
-        type: Sequelize.DATE
-    },
-    origin_id: {
-        type: Sequelize.INTEGER
-    },
-    phase1_rms: {
-        type: Sequelize.DOUBLE
-    },
-    phase2_rms: {
-        type: Sequelize.DOUBLE
-    },
-    phase3_rms: {
-        type: Sequelize.DOUBLE
-    },
-    neutral_rms: {
-        type: Sequelize.DOUBLE
-    }
-}, { timestamps: false, id: false});
-let sensors = sequelize.define('sensors', {
-    id: {
-        primaryKey: true,
-        type: Sequelize.INTEGER
-    },
-    name: {
-        type: Sequelize.STRING
-    },
-    type: {
-        type: Sequelize.STRING
-    },
-    location: {
-        type: Sequelize.STRING
-    },
-    connected: {
-        type: Sequelize.BOOLEAN
-    },
-    last_transmission: {
-        type: Sequelize.DATE
-    }
-}, { timestamps: false, id: false })
+const { sensors_model, sensor_data_model, mn_sensor_data_model,
+        hr_sensor_data_model, dy_sensor_data_model } = require('./models.js');
+let sensor_data = sequelize.define('sensor_data', sensor_data_model, { timestamps: false, id: false});
+let sensors = sequelize.define('sensors', sensors_model, { timestamps: false, id: false });
+let mn_sensor_data = sequelize.define('mn_sensor_data', mn_sensor_data_model, { timestamps: false, id: false});
+let hr_sensor_data = sequelize.define('hr_sensor_data', hr_sensor_data_model, { timestamps: false, id: false });
+let dy_sensor_data = sequelize.define('dy_sensor_data', dy_sensor_data_model, { timestamps: false, id: false});
 sequelize.authenticate().then(() => {
     console.log('Database connected');
 }).catch(err => {
@@ -95,11 +59,123 @@ app.get('/', (req, res) => {
     res.redirect('/dashboard.html');
 });
 
-// API
-app.get('/api/:originId/data/:startTime-:endTime', (req, res) => {
+// API routes
+
+// route for getting all sensor data
+app.get('/api/sensors', (req, res) => {
+    sensors.findAll().then((sensrs) => {
+        res.json(sensrs);
+    }).catch(err => {
+        console.log(err);
+        res.status(500).send("Error retrieving sensors from database.");
+    });
+});
+
+// route for getting individual sensor data
+app.get('/api/sensors/:id', (req, res) => {
+    var id = Number(req.params.id);
+    sensors.findOne({
+        where: {
+            id: id,
+        },
+    }).then((sensor) => {
+        if (sensor) {
+            res.json(sensor);
+        } else {
+            res.status(404).send("Sensor not found.");
+        }
+    }).catch(err => {
+        console.log(err);
+        res.status(500).send("Error retrieving sensor from database.");
+    });
+});
+
+// route for getting sensor data by the second
+app.get('/api/sensor_data/seconds/:originId/:startTime-:endTime', (req, res) => {
+    console.log("Seconds route called")
     var oid = req.params.originId;
-    var startTime = new Date(req.params.startTime);
-    var endTime = new Date(req.params.endTime);
+    var startTime = new Date(Number(req.params.startTime));
+    var endTime = new Date(Number(req.params.endTime));
+    sensor_data.findAll({
+        where: {
+            origin_id: oid,
+            time: {
+                [Sequelize.Op.gte]: startTime,
+                [Sequelize.Op.lte]: endTime,
+            },
+        },
+    }).then((data) => {
+        res.json(data);
+    }).catch(err => {
+        console.log(err);
+        res.status(500).send("Error retrieving sensor data from database.");
+    })
+});
+
+// route for getting sensor data by the minute
+app.get('/api/sensor_data/minutes/:originId/:startTime-:endTime', (req, res) => {
+    console.log("Minutes route called")
+    var oid = req.params.originId;
+    var startTime = new Date(Number(req.params.startTime));
+    var endTime = new Date(Number(req.params.endTime));
+    mn_sensor_data.findAll({
+        where: {
+            origin_id: oid,
+            minute: {
+                [Sequelize.Op.gte]: startTime,
+                [Sequelize.Op.lte]: endTime,
+            },
+        },
+    }).then((data) => {
+        res.json(data);
+    }).catch(err => {
+        console.log(err);
+        res.status(500).send("Error retrieving sensor data from database.");
+    })
+});
+
+// route for getting sensor data by the hour
+app.get('/api/sensor_data/hours/:originId/:startTime-:endTime', (req, res) => {
+    console.log("Hours route called")
+    var oid = req.params.originId;
+    var startTime = new Date(Number(req.params.startTime));
+    var endTime = new Date(Number(req.params.endTime));
+    hr_sensor_data.findAll({
+        where: {
+            origin_id: oid,
+            hour: {
+                [Sequelize.Op.gte]: startTime,
+                [Sequelize.Op.lte]: endTime,
+            },
+        },
+    }).then((data) => {
+        res.json(data);
+    }).catch(err => {
+        console.log(err);
+        res.status(500).send("Error retrieving sensor data from database.");
+    })
+});
+
+// route for getting sensor data by the day
+app.get('/api/sensor_data/days/:originId/:startTime-:endTime', (req, res) => {
+    console.log("Days route called")
+    var oid = req.params.originId;
+    var startTime = new Date(Number(req.params.startTime));
+    var endTime = new Date(Number(req.params.endTime));
+    dy_sensor_data.findAll({
+        where: {
+            origin_id: oid,
+            day: {
+                [Sequelize.Op.gte]: startTime,
+                [Sequelize.Op.lte]: endTime,
+            },
+        },
+    }).then((data) => {
+        res.json(data);
+    }).catch(err => {
+        console.log(err);
+        res.status(500).send("Error retrieving sensor data from database.");
+    })
 });
 
 // Socket.io
@@ -147,18 +223,18 @@ client.on("message", async (topic, message, packet) => {
         var neutral_data = []
         for (var i = 1 ; i < lines.length ; i++){
             var line = lines[i].split(",")
-            phase1_data[i-1] = [Number('0x' + line[0]) - init_time, 3.3*(Number('0x' + line[1])-2048)/4096]
-            phase2_data[i-1] = [Number('0x' + line[0]) - init_time, 3.3*(Number('0x' + line[2])-2048)/4096]
-            phase3_data[i-1] = [Number('0x' + line[0]) - init_time, 3.3*(Number('0x' + line[3])-2048)/4096]
-            neutral_data[i-1] = [Number('0x' + line[0]) - init_time, 3.3*(Number('0x' + line[4])-2048)/4096]
+            phase1_data[i-1] = [Number('0x' + line[0]) - init_time, 330*(Number('0x' + line[1])-2048)/4096]
+            phase2_data[i-1] = [Number('0x' + line[0]) - init_time, 330*(Number('0x' + line[2])-2048)/4096]
+            phase3_data[i-1] = [Number('0x' + line[0]) - init_time, 330*(Number('0x' + line[3])-2048)/4096]
+            neutral_data[i-1] = [Number('0x' + line[0]) - init_time, 330*(Number('0x' + line[4])-2048)/4096]
         }
-        var trigger_index = 0;
+        var trigger_index = 1;
         var zero_crossing = 0;
         var delta_phase2 = 0;
         var delta_phase3 = 0;
         for (var i = 1 ; i < phase1_data.length; i++) {
             if (phase1_data[i][1] > 0 && phase1_data[i-1][1] < 0) {
-                trigger_index = i-1;
+                trigger_index = i;
                 y1 = phase1_data[i-1][1]
                 x1 = phase1_data[i-1][0]
                 y2 = phase1_data[i][1]
@@ -219,10 +295,10 @@ client.on("message", async (topic, message, packet) => {
             socket_message = {
                 time: new Date(parsedMessage.time),
                 origin_id: parsedMessage.origin_id,
-                phase1_rms: Math.sqrt(parsedMessage.data.phase1) * 3.3 / 4095,
-                phase2_rms: Math.sqrt(parsedMessage.data.phase2) * 3.3 / 4095,
-                phase3_rms: Math.sqrt(parsedMessage.data.phase3) * 3.3 / 4095,
-                neutral_rms: Math.sqrt(parsedMessage.data.neutral) * 3.3 / 4095
+                phase1_rms: Math.sqrt(parsedMessage.data.phase1) * 330 / 4095,
+                phase2_rms: Math.sqrt(parsedMessage.data.phase2) * 330 / 4095,
+                phase3_rms: Math.sqrt(parsedMessage.data.phase3) * 330 / 4095,
+                neutral_rms: Math.sqrt(parsedMessage.data.neutral) * 330 / 4095
             }
             io.emit("processed_sensor_data", socket_message)
             //console.log(Date.now() - Date.parse(sensor.dataValues.last_transmission))

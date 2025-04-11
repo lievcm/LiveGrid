@@ -76,14 +76,14 @@ export default {
 }
 
 .header {
-    height: 38px;
+    height: 39px;
     background-color: #3d3d3d;
     display: flex;
-    border-top-width: 1px;
-    border-top-color: #2c2c2c;
+    border-top-width: 0.5px;
+    border-top-color: var(--sidebar-accent-color);
     border-top-style: solid;
-    border-bottom-width: 1px;
-    border-bottom-color: #2c2c2c;
+    border-bottom-width: 0.5px;
+    border-bottom-color: var(--sidebar-accent-color);
     border-bottom-style: solid;
 }
 
@@ -111,9 +111,13 @@ export default {
     background-color: #3a3a3a;
     display: flex;
 
-    border-bottom-width: 1px;
+    border-bottom-width: 0.5px;
     border-bottom-style: solid;
-    border-bottom-color: #2c2c2c;
+    border-bottom-color: var(--sidebar-accent-color);
+    
+    border-top-width: 0.5px;
+    border-top-style: solid;
+    border-top-color: var(--sidebar-accent-color);
 }
 
 .info .left {
@@ -169,8 +173,8 @@ export default {
 }
 
 .info .divider {
-    background-color: #2c2c2c;
-    width: 2px;
+    background-color: var(--sidebar-accent-color);
+    width: 1px;
 }
 
 .info .right {

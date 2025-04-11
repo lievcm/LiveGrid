@@ -4,10 +4,9 @@ import { computed, onMounted, ref, watch } from 'vue';
 import WaveformGraphWidget from '@/components/monitor/WaveformGraphWidget.vue';
 import PhasorGraphWidget from '@/components/monitor/PhasorGraphWidget.vue';
 import RmsGraphWidget from '@/components/monitor/RmsGraphWidget.vue';
+import { selected_oid, rms_active, waveform_active } from '@/components/monitor/monitor_store';
 
 const sensor_data_processed = computed(() => socket_state.sensor_data.sort((a, b) => a.origin_id - b.origin_id).filter((sens) => sens.connected));
-
-const selected_oid = ref(null)
 
 const sens = computed(() => getSensor(selected_oid.value))
 
@@ -16,28 +15,22 @@ const last_update_time_string = computed(() =>  {
     return time.toLocaleString();
 })
 
-const rms_active = ref(true)
-const waveform_active = ref(true)
-const handle_rms_click = () => {
-    // had to write a truth table for this one lmfaooo
-    rms_active.value = true;
-    waveform_active.value = !waveform_active.value;
-}
-const handle_waveform_click = () => {
-    waveform_active.value = true;
-    rms_active.value = !rms_active.value;
-}
+onMounted(() => {
+    if (selected_oid.value == null && sensor_data_processed.value.length > 0) {
+        selected_oid.value = sensor_data_processed.value[0].origin_id; // set selected to first val if not already done
+    }
+    if (selected_oid.value == -1) {
+        selected_oid.value = sensor_data_processed.value[0].origin_id; // set selected to first val if not already done
+    }
+})
 
 
 watch(sensor_data_processed, (newVal, oldVal) => {
     if (selected_oid.value == null && sensor_data_processed.value.length > 0) {
         selected_oid.value = sensor_data_processed.value[0].origin_id; // set selected to first val if not already done
     }
-})
-
-onMounted(() => {
-    if (sensor_data_processed.value.length > 0) {
-        selected_oid.value = sensor_data_processed.value[0].origin_id;
+    if (selected_oid.value == -1) {
+        selected_oid.value = sensor_data_processed.value[0].origin_id; // set selected to first val if not already done
     }
 })
 </script>
@@ -114,10 +107,10 @@ onMounted(() => {
             </div>
         </div>
         <div class="right">
-            <div class="rms-graph" :style="{flexGrow: Number(rms_active)}" @click="handle_rms_click">
+            <div class="rms-graph" :style="{flexGrow: Number(rms_active)}">
                 <RmsGraphWidget :origin_id="selected_oid" />
             </div>
-            <div class="waveform-graph" :style="{flexGrow: Number(waveform_active)}" @click="handle_waveform_click">
+            <div class="waveform-graph" :style="{flexGrow: Number(waveform_active)}">
                 <WaveformGraphWidget :origin_id="selected_oid" />
             </div>
         </div>

@@ -4,9 +4,26 @@
     "files.associations": {
         "*.ino": "cpp",
         "cmath": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "format": "cpp",
+        "initializer_list": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp",
+        "iterator": "cpp",
+        "memory": "cpp",
+        "xlocmon": "cpp",
+        "xlocnum": "cpp",
+        "xmemory": "cpp",
+        "xlocmes": "cpp",
+        "system_error": "cpp",
+        "xlocale": "cpp",
+        "cstdlib": "cpp",
+        "ostream": "cpp",
+        "array": "cpp",
+        "tuple": "cpp",
+        "print": "cpp"
     },
-    "particle.targetDevice": "0a10aced202194944a055aa8",
+    "particle.targetDevice": "0a10aced202194944a055924",
     "particle.targetPlatform": "p2",
     "particle.firmwareVersion": "5.9.0",
     "particle.debugWarningShown": true

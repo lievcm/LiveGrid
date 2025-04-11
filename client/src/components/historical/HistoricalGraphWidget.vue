@@ -1,34 +1,56 @@
 <script setup>
-import { getSensor } from '@/socket';
-import { computed, reactive, ref, watch, watchEffect } from 'vue';
-import { handle_rms_click, series } from './monitor_store';
 
+import { loading, phase1_select, phase2_select, phase3_select, neutral_select, series } from './historical_store';
+import { toRaw } from 'vue';
+import { computed } from 'vue';
 
-const props = defineProps({
-    origin_id: Number
+const max = computed(() => {
+    return Math.max(...series.value.map((ser) => Math.max(...ser.data.map((dat) => dat.y.constructor === Array ? dat.y[1] : dat.y))))
 })
 
-const sens = computed(() => getSensor(props.origin_id))
+const min = computed(() => {
+    return Math.min(...series.value.map((ser) => Math.min(...ser.data.map((dat) => dat.y.constructor === Array ? dat.y[0] : dat.y))))
+})
 
-watchEffect(() => {
-    var update_date = new Date(sens.value.last_update_time)
-    if(update_date.getFullYear() > 2000) {
-        series.value[0].data.push([update_date.getTime(), sens.value.phase1_rms])
-        series.value[1].data.push([update_date.getTime(), sens.value.phase2_rms])
-        series.value[2].data.push([update_date.getTime(), sens.value.phase3_rms])
-        series.value[3].data.push([update_date.getTime(), sens.value.neutral_rms])
-        if (series.value[0].data.length > 120) {
-            series.value.forEach((ser) => ser.data.shift())
-        }
+const legendItems = computed(() => {
+    let items = []
+    if (phase1_select.value) {
+        items.push("Phase 1")
     }
+    if (phase2_select.value) {
+        items.push("Phase 2")
+    }
+    if (phase3_select.value) {
+        items.push("Phase 3")
+    }
+    if (neutral_select.value) {
+        items.push("Neutral")
+    }
+    return items;
 })
 
-const options = reactive({
+const legendColors = computed(() => {
+    let colors = []
+    if (phase1_select.value) {
+        colors.push("#008ffb")
+    }
+    if (phase2_select.value) {
+        colors.push("#00e396")
+    }
+    if (phase3_select.value) {
+        colors.push("#feb019")
+    }
+    if (neutral_select.value) {
+        colors.push("#ff4560")
+    }
+    return colors;
+})
+
+const options = computed(() => ({
     chart: {
         toolbar: {
             show: false
         },
-        id:'rms',
         forecolor: '#0090c9',
         zoom: {
             enabled: false
@@ -40,19 +62,19 @@ const options = reactive({
             enabled: false
         },
         width: '100%',
-        height: '100%'
+        height: '100%',
+        type: 'rangeArea',
     },
     xaxis: {
         type: 'numeric',
-        range: 60000*2,
-        tickAmount: 10,
+        tickAmount: 6,
         labels: {
             style: {
                 colors: '#0090c9'
             },
             formatter: function (value) {
                 var timestamp = new Date(value)
-                return `${timestamp.getHours()}:${timestamp.getMinutes()}:${timestamp.getSeconds()}`
+                return `${timestamp.getMonth() + 1}/${timestamp.getDate()}/${timestamp.getFullYear()}  ${timestamp.getHours()}:${timestamp.getMinutes()}:${timestamp.getSeconds()}`
             }
         },
         axisBorder: {
@@ -64,9 +86,9 @@ const options = reactive({
     },
     yaxis: {
         tickAmount: 7,
-        max: 30,
-        min: 0,
         decimalsInFloat: 3,
+        max: max.value + 0.3,
+        min: min.value - 0.3,
         labels: {
             style: {
                 colors: '#0090c9'
@@ -74,17 +96,19 @@ const options = reactive({
         }
     },
     legend: {
-        show: false,
+        show: true,
         position: 'top',
         fontSize: '14px',
+        customLegendItems: legendItems.value,
         labels: {
-            useSeriesColors: true
+            colors: legendColors.value,
         },
         markers: {
             offsetX: -3,
             strokeWidth: 0,
+            fillColors: legendColors.value,
         },
-        height: 20
+        height: 30,
     },
     tooltip: {
         enabled: false
@@ -104,26 +128,33 @@ const options = reactive({
     },
     stroke: {
         width: 1.9
+    },
+    dataLabels: {
+        enabled: false
+    },
+    fill: {
+        opacity: [0.24, 1, 0.24, 1, 0.24, 1, 0.24, 1]
+    },
+    stroke: {
+        width: [0.5, 1, 0.5, 1, 0.5, 1, 0.5, 1],
     }
-})
+}))
+
 </script>
 
 <template>
     <div class="widget">
-        <div class="title" @click="handle_rms_click">
-            RMS Readings
+        <div class="title">
+            Graph
         </div>
         <div class="divider"></div>
         <div class="body">
-            <div class="graph-wrapper">
-                <apexchart type="line" height="100%" width="100%" :options="options" :series="series" />
-            </div>
+            <apexchart :options="options" :series="toRaw(series)" width="100%" height="100%" v-show="!loading && series.length != 0"/>
         </div>
     </div>
 </template>
 
 <style scoped>
-
 .widget {
     background-color: var(--widget-bg-color);
     height: 100%;
@@ -150,7 +181,7 @@ const options = reactive({
     background-color: var(--sidebar-bg-color);
     color: var(--sidebar-accent-color);
 
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 600;
 
     display: flex;
@@ -161,16 +192,6 @@ const options = reactive({
 
 .body {
     flex: 1;
-    position: relative;
-    overflow: hidden;
+    padding: 10px;
 }
-
-.graph-wrapper {
-    position: absolute;
-    left: 10px;
-    right: 8px;
-    top: 0;
-    bottom: 15px;
-}
-
 </style>

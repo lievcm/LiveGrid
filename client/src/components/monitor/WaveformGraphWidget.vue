@@ -2,6 +2,7 @@
 
 import { getSensor, socket_state } from '@/socket';
 import { computed, reactive, ref, watch } from 'vue';
+import { handle_waveform_click } from './monitor_store';
 
 const props = defineProps({
     origin_id: Number
@@ -47,8 +48,8 @@ const options = reactive({
         }
     },
     yaxis: {
-        min: -2,
-        max: 2,
+        min: -30,
+        max: 30,
         tickAmount: 7,
         decimalsInFloat: 3,
         labels: {
@@ -94,7 +95,7 @@ const options = reactive({
 
 <template>
     <div class="graph-widget" >
-        <div class="widget-header">Current Waveform</div>
+        <div class="widget-header" @click="handle_waveform_click">Current Waveform</div>
         <div class="divider"></div>
         <div class="body">
             <div class="graph-wrapper">

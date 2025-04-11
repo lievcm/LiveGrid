@@ -3,16 +3,21 @@
 
 #include <Print64.h>
 
-#define MAX_READ_COUNT 64
+#define MAX_READ_COUNT_CSV 40
+#define MAX_READ_COUNT_JSON 256
 
 using namespace sensor_processing;
 
-uint32_t write_header_csv(char* csv, uint32_t oid, uint32_t phase);
+uint32_t write_header_csv(char* csv, uint32_t oid);
 uint32_t write_line_csv(char* csv, uint32_t time, uint16_t* data, uint32_t length, uint32_t start);
 char hex_nibble_to_char(uint8_t nibble);
 
 // fsm states
-sensor_processing::STATE state_csv, state_json;
+sensor_processing::STATE state;
+
+// flags for switching states from ready to reading
+bool waveform_read;
+bool rms_read;
 
 // origin id (for header)
 uint32_t origin_id;
@@ -21,15 +26,16 @@ uint32_t origin_id;
 int64_t start_time;
 
 // buffers
-char* csv_buffer;
-char* json_buffer;
+char* waveform_csv_buffer;
+char* rms_json_buffer;
+char* rms_csv_buffer;
+char* rms_data_ptr[2] = {0};
 
 uint32_t inputs[4] = {0}; //input pins
-uint32_t current_input;   //input currently being read
 
 uint32_t current_reading; //reading number of current iteration
-uint32_t csv_current_offset; // current location in csv buff
-uint32_t json_sums_counter; // number of full readings (on all 4 pins)
+uint32_t waveform_csv_offset; // current location in csv buff
+uint32_t rms_csv_offset; // current location in rms buff
 
 uint32_t rms_sums[4] = {0}; // stores accumulation for rms readings
 
@@ -42,16 +48,21 @@ void sensor_processing::init(uint32_t* ins, uint32_t oid) {
 
     origin_id = oid;
 
-    csv_buffer = (char*)malloc(1500*sizeof(char)); // will not be freeing these
-    json_buffer = (char*)malloc(200*sizeof(char));
+    waveform_csv_buffer = (char*)malloc(2048*sizeof(char)); // will not be freeing these
+    rms_json_buffer = (char*)malloc(200*sizeof(char));
+    rms_csv_buffer = (char*)malloc(200*sizeof(char));
 
-    state_csv = STATE::READING;   // start in the reading state
-    state_json = STATE::READING;
+    rms_data_ptr[0] = rms_json_buffer; // json string
+    rms_data_ptr[1] = rms_csv_buffer; // csv string
+
+    state = STATE::READING;
 
     current_reading = 0;        // initialize all counters to 0
-    csv_current_offset = 0;
-    current_input = 0;
-    json_sums_counter = 0;
+    waveform_csv_offset = 0;
+    rms_csv_offset = 0;
+
+    waveform_read = false;
+    rms_read = false;
 
     // store the start time
     start_time = (int64_t)1000*Time.now() - (int64_t)System.millis(); //64 bit time that wont overflow for 584942417355 years
@@ -60,110 +71,102 @@ void sensor_processing::init(uint32_t* ins, uint32_t oid) {
 
 void sensor_processing::loop() {
 
-    if (state_csv == STATE::READING) {
+    if (state == STATE::READING) {
 
         if (current_reading == 0) { // write header if at the start
-            csv_current_offset = write_header_csv(csv_buffer, origin_id, current_input);
+            waveform_csv_offset = write_header_csv(waveform_csv_buffer, origin_id);
         }
 
         // store time and adc input
         uint32_t time = micros();
-        uint16_t reading = (uint16_t)analogRead(inputs[current_input]);
+        uint16_t readings[] = {(uint16_t)analogRead(inputs[0]), (uint16_t)analogRead(inputs[1]), (uint16_t)analogRead(inputs[2]), (uint16_t)analogRead(inputs[3])};
 
         // write data to csv
-        csv_current_offset = write_line_csv(csv_buffer, time, &reading, 1, csv_current_offset);
+        if (current_reading < MAX_READ_COUNT_CSV) {
+            waveform_csv_offset = write_line_csv(waveform_csv_buffer, time, readings, 4, waveform_csv_offset);
+        }
 
-        // add data to rms accumulation if not full
-        if (json_sums_counter < 4) {
-            int32_t reading_calib = (int32_t)reading - 2048;
-            rms_sums[current_input] += reading_calib * reading_calib;
+        // add data to rms accumulation
+        for (int i = 0; i < 4; i++) {
+            int32_t reading_calib = (int32_t)readings[i] - 2048;
+            rms_sums[i] += reading_calib * reading_calib;
         }
 
         // move to next state when max read count is reached
-        if (current_reading == MAX_READ_COUNT-1) {
-            
-            // update current input & json sum counter
-            if (current_input == 3) {
-                current_input = 0;
-                json_sums_counter++;
-            }
-            else {
-                current_input++;
+        if (current_reading == MAX_READ_COUNT_JSON-1) {
+
+            Serial.println("done reading");
+
+            // create json string
+            for (int i = 0; i < 4; i++) {
+                rms_sums[i] = rms_sums[i]>>8;
             }
 
-            csv_buffer[csv_current_offset-1] = '\0'; // terminate csv
-            state_csv = STATE::READY;
+            snprintf(rms_json_buffer, 200*sizeof(char),  "{\"origin_id\": %ld, \"time\": %s, \"data\": { \"phase1\": %ld, \"phase2\": %ld,\"phase3\": %ld,\"neutral\": %ld} }", 
+                        origin_id, toString(start_time + (int64_t)System.millis()).c_str(), rms_sums[0], rms_sums[1], rms_sums[2], rms_sums[3]);
+
+            snprintf(rms_csv_buffer, 150*sizeof(char), "%s,%ld,%ld,%ld,%ld", toString(start_time + (int64_t)System.millis()).c_str(), rms_sums[0], rms_sums[1], rms_sums[2], rms_sums[3]);
+
+            for (int i = 0; i < 4; i++) {
+                rms_sums[i] = 0;
+            }
+
+            waveform_csv_buffer[waveform_csv_offset-1] = '\0'; // terminate csv
+
+            state = STATE::READY;
             current_reading = 0;
-            csv_current_offset = 0;
+            waveform_csv_offset = 0;
 
         }
         else current_reading++;
 
     }
+}
 
-    if (state_json == STATE::READING) {
+char* sensor_processing::get_waveform_csv() {
 
-        // if 256 sums have been accumulated
-        // create json and move to next state
-        if (json_sums_counter >= 4) {
+    if (state == STATE::READY) {
 
-            for (int i = 0; i < 4; i++) {
-                rms_sums[i] = rms_sums[i]>>8;
-            }
-
-            snprintf(json_buffer, 200*sizeof(char),  "{\"origin_id\": %ld, \"time\": %s, \"data\": { \"phase1\": %ld, \"phase2\": %ld,\"phase3\": %ld,\"neutral\": %ld} }", 
-                        origin_id, toString(start_time + (int64_t)System.millis()).c_str(), rms_sums[0], rms_sums[1], rms_sums[2], rms_sums[3]);
-            
-            state_json = STATE::READY;
+        if (rms_read) {
+            state = STATE::READING;
+            rms_read = false;
+        } else {
+            waveform_read = true;
         }
 
-    }
-
-}
-
-char* sensor_processing::get_chunk_csv() {
-
-    if (state_csv == STATE::READY) {
-
-        state_csv = STATE::READING;
-
-        return csv_buffer;
+        return waveform_csv_buffer;
 
     }
     else return NULL;
 
 }
 
-char* sensor_processing::get_rms_json() {
+char** sensor_processing::get_rms_data() {
     
-    if (state_json == STATE::READY) {
+    if (state == STATE::READY) {
 
-        state_json = STATE::READING;
+        if (waveform_read) {
+            state = STATE::READING;
+            waveform_read = false;
+        } else {
+            rms_read = true;
+        }
 
-        json_sums_counter = 0;
-
-        return json_buffer;
-
+        return rms_data_ptr;
     }
     else return NULL;
 
 }
 
-bool sensor_processing::is_ready_csv() {
-    return state_csv == STATE::READY;
+bool sensor_processing::is_ready() {
+    return state == STATE::READY;
 }
 
-bool sensor_processing::is_ready_json() {
-    return state_json == STATE::READY;
-}
-
-uint32_t write_header_csv(char* csv, uint32_t oid, uint32_t phase) {
+uint32_t write_header_csv(char* csv, uint32_t oid) {
     uint32_t csv_iterator = 0;
     for (int i = 0; i < 3; i++) {
-        csv_buffer[csv_iterator++] = hex_nibble_to_char((oid>>4*(2-i)) & 0xF);
+        waveform_csv_buffer[csv_iterator++] = hex_nibble_to_char((oid>>4*(2-i)) & 0xF);
     }
-    csv[csv_iterator++] = ',';
-    csv[csv_iterator++] = hex_nibble_to_char(phase & 0xF);
     csv[csv_iterator++] = '\n';
     return csv_iterator;
 }
