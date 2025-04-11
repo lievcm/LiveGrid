@@ -1,5 +1,5 @@
 # LiveGrid
-![alt text](image-1.png)
+![alt text](/assets/image-1.png)
 
 ## Overview
 LiveGrid is a realtime, wireless, current measurement and monitoring system intended for use with 3 phase power systems.\
@@ -50,12 +50,11 @@ This project was created by:
 All software was written by Liev Mitchell
 
 ## License
-All works in this repository are licensed with CC0. \
-See [LICENSE.MD]()
+See [license](/LICENSE)
 
 ## Images
-<img src="image-2.png" width=49%>
-<img src="image-3.png" width=49%>
-<img src="image.png">
-<img src="image-4.png">
-<img src="image-5.png">
+<img src="/assets/image-2.png" width=49%>
+<img src="/assets/image-3.png" width=49%>
+<img src="/assets/image.png">
+<img src="/assets/image-4.png">
+<img src="/assets/image-5.png">
